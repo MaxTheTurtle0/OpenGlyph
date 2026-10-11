@@ -3,6 +3,20 @@ import Foundation
 
 /// Converts AppKit's bottom-left screen coordinates to a screenshot's top-left pixels.
 public enum CaptureGeometry {
+    /// ScreenCaptureKit's dimensions and scale are one coordinate system. AppKit's
+    /// backing scale must not be mixed in, especially with scaled display modes.
+    public static func screenshotPixelSize(contentRect: CGRect, pointPixelScale: CGFloat) -> CGSize? {
+        guard isFinite(contentRect), contentRect.width > 0, contentRect.height > 0,
+              pointPixelScale.isFinite, pointPixelScale > 0 else { return nil }
+        let size = CGSize(
+            width: ceil(contentRect.width * pointPixelScale),
+            height: ceil(contentRect.height * pointPixelScale)
+        )
+        guard size.width.isFinite, size.height.isFinite,
+              size.width <= 16_384, size.height <= 16_384 else { return nil }
+        return size
+    }
+
     public struct Screenshot {
         public let frame: CGRect
         public let image: CGImage

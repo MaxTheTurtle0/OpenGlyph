@@ -17,6 +17,8 @@ Inspired by the workflow of [Letra](https://getletra.app/). OpenGlyph is an inde
 
 Language availability comes from Apple Vision on your macOS version. Clear handwriting can work; recognition accuracy depends on the source image. Fast mode supports fewer languages.
 
+If Apple's accurate recognizer fails internally, OpenGlyph tries backup recognition. It labels the result when a backup was used. Fast backup can be less accurate and supports fewer languages; automatic backup uses your supported preferred languages. A selected language that the backup cannot recognize remains an error.
+
 ## Install on a Mac
 
 macOS 14 or later, Apple Silicon or Intel. [Download a release archive](https://github.com/MaxTheTurtle0/OpenGlyph/releases/latest), unzip it, and move OpenGlyph.app into Applications. Local builds are ad-hoc signed; public builds are not Apple-notarized. See [building and signing](docs/BUILDING.md) for details.
@@ -80,7 +82,7 @@ swift tools/GenerateFixtures.swift /tmp/openglyph-fixtures
 .build/debug/OpenGlyph --ocr /tmp/openglyph-fixtures/text.png --json
 ```
 
-See [verification notes](docs/VERIFICATION.md) for checks run on the initial build and remaining manual checks.
+See [verification notes](docs/VERIFICATION.md) for checks run on the MacBook Air and remaining manual checks.
 
 ## Other platforms
 

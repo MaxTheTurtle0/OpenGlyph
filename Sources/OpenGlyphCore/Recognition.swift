@@ -19,9 +19,13 @@ public struct RecognitionOptions: Sendable {
 public struct RecognitionResult: Equatable, Sendable {
     public let text: String
     public let kind: CaptureKind
+    public let usedCompatibilityEngine: Bool
+    public let usedFastRecovery: Bool
 
-    public init(text: String, kind: CaptureKind) {
+    public init(text: String, kind: CaptureKind, usedCompatibilityEngine: Bool = false, usedFastRecovery: Bool = false) {
         self.text = text
         self.kind = kind
+        self.usedCompatibilityEngine = usedCompatibilityEngine
+        self.usedFastRecovery = usedFastRecovery
     }
 }

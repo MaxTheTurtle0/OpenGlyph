@@ -20,6 +20,9 @@ enum PreviewRenderer {
         history.add(CaptureItem(text: "https://github.com/MaxTheTurtle0/OpenGlyph", kind: .link, source: "Safari"))
         history.add(CaptureItem(text: "https://example.com/join", kind: .qrCode, source: "Screen"))
         try snapshot(MenuView(controller: controller, settings: settings, history: history), size: NSSize(width: 390, height: 540), file: directory.appendingPathComponent("menu.png"))
+        controller.recognitionNotice = "Fast backup used your preferred languages and may be less accurate. Choose a language in Settings if needed."
+        try snapshot(MenuView(controller: controller, settings: settings, history: history), size: NSSize(width: 390, height: 540), file: directory.appendingPathComponent("menu-backup.png"))
+        controller.recognitionNotice = nil
         try snapshot(SettingsView(controller: controller, settings: settings), size: NSSize(width: 580, height: 650), file: directory.appendingPathComponent("settings.png"))
         for step in 0..<3 {
             try snapshot(OnboardingView(controller: controller, settings: settings, initialStep: step), size: NSSize(width: 660, height: 580), file: directory.appendingPathComponent("onboarding-\(step).png"))

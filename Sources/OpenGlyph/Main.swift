@@ -17,9 +17,19 @@ struct OpenGlyphMain {
                 let options = RecognitionOptions(mode: arguments.contains("--fast") ? .fast : .accurate, language: language, keepLineBreaks: !arguments.contains("--no-line-breaks"))
                 let result = try OCRService.recognize(fileURL: URL(fileURLWithPath: arguments[index + 1]), options: options)
                 if arguments.contains("--json") {
-                    let data = try JSONSerialization.data(withJSONObject: ["text": result.text, "kind": result.kind.rawValue], options: [.sortedKeys])
+                    var object: [String: Any] = ["text": result.text, "kind": result.kind.rawValue]
+                    if result.usedCompatibilityEngine { object["usedCompatibilityEngine"] = true }
+                    if result.usedFastRecovery { object["usedFastRecovery"] = true }
+                    let data = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
                     print(String(decoding: data, as: UTF8.self))
-                } else { print(result.text) }
+                } else {
+                    print(result.text)
+                    if result.usedFastRecovery {
+                        FileHandle.standardError.write(Data("OpenGlyph: Used fast backup recognition; output may be less accurate.\n".utf8))
+                    } else if result.usedCompatibilityEngine {
+                        FileHandle.standardError.write(Data("OpenGlyph: Used backup recognition with supported preferred or selected languages.\n".utf8))
+                    }
+                }
                 if arguments.contains("--copy") {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(result.text, forType: .string)
@@ -36,7 +46,7 @@ struct OpenGlyphMain {
             return
         }
         if arguments.contains("--diagnostics") {
-            let values: [String: Any] = ["version": Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0", "screenCapturePermission": CaptureCoordinator.hasPermission, "languages": OCRService.supportedLanguages(mode: .accurate), "bundlePath": Bundle.main.bundlePath]
+            let values: [String: Any] = ["version": Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.1", "screenCapturePermission": CaptureCoordinator.hasPermission, "languages": OCRService.supportedLanguages(mode: .accurate), "bundlePath": Bundle.main.bundlePath]
             if let data = try? JSONSerialization.data(withJSONObject: values, options: [.prettyPrinted, .sortedKeys]) { print(String(decoding: data, as: UTF8.self)) }
             return
         }

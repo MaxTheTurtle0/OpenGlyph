@@ -10,6 +10,32 @@ final class CaptureGeometryTests: XCTestCase {
     private let yellow: [UInt8] = [255, 255, 0, 255]
     private let white: [UInt8] = [255, 255, 255, 255]
 
+    func testScaledMacBookAirCaptureUsesFilterDimensions() {
+        // "More Space" on the Air renders 2940x1912 pixels on its 2560x1664 panel.
+        XCTAssertEqual(CaptureGeometry.screenshotPixelSize(
+            contentRect: CGRect(x: 0, y: 0, width: 1470, height: 956), pointPixelScale: 2
+        ), CGSize(width: 2940, height: 1912))
+    }
+
+    func testCaptureUsesOwnScaleInsteadOfAppKitBackingScale() {
+        XCTAssertEqual(CaptureGeometry.screenshotPixelSize(
+            contentRect: CGRect(x: 1920, y: -200, width: 1920, height: 1080), pointPixelScale: 1
+        ), CGSize(width: 1920, height: 1080))
+        XCTAssertEqual(CaptureGeometry.screenshotPixelSize(
+            contentRect: CGRect(x: -1920, y: 0, width: 1920, height: 1080), pointPixelScale: 1.5
+        ), CGSize(width: 2880, height: 1620))
+    }
+
+    func testInvalidCaptureDimensionsAreRejected() {
+        XCTAssertNil(CaptureGeometry.screenshotPixelSize(contentRect: .zero, pointPixelScale: 2))
+        XCTAssertNil(CaptureGeometry.screenshotPixelSize(
+            contentRect: CGRect(x: 0, y: 0, width: 100, height: 100), pointPixelScale: .nan
+        ))
+        XCTAssertNil(CaptureGeometry.screenshotPixelSize(
+            contentRect: CGRect(x: 0, y: 0, width: 10_000, height: 10_000), pointPixelScale: 2
+        ))
+    }
+
     func testRetinaCropFlipsScreenYAxis() {
         let crop = CaptureGeometry.pixelRect(
             for: CGRect(x: 100, y: 700, width: 300, height: 100),

@@ -18,7 +18,7 @@ swift test
 
 The build produces `build/OpenGlyph.app`. The installer verifies the app's signature, asks a running OpenGlyph instance to quit, installs into `~/Applications/OpenGlyph.app`, registers its file and URL handlers, and opens it. OpenGlyph appears in the menu bar. The installer stops if the running app does not quit within ten seconds.
 
-On the tested Swift 6.4 / Xcode 27 toolchain, the default SwiftBuild test host failed accurate Vision requests. The same source passed all 31 tests with `swift test --build-system native`. Use that test command if you encounter this failure; app builds and recognition were verified separately. See [verification notes](VERIFICATION.md). The native build-system option is deprecated in Swift 6.4.
+Version 0.1.1 passes the test suite with both the default SwiftBuild runner and `swift test --build-system native` on the tested Swift 6.4 / Xcode 27 toolchain. The native option is deprecated in Swift 6.4. See [verification notes](VERIFICATION.md) for the recognition failure reproduced on that Mac and the recovery behavior.
 
 Use `./scripts/install.sh` to build and install in one command. `--no-open` installs without launching. Set `INSTALL_DIR` to install into another directory you can write to, such as `/Applications` if your account already has permission. No script uses `sudo` or changes macOS privacy settings.
 
@@ -29,6 +29,8 @@ Screen recognition needs macOS Screen Recording permission. In OpenGlyph's onboa
 Keep the installed bundle at the same path. The bundle identifier is `app.openglyph.mac`; local ad-hoc builds also use a stable designated signing requirement. macOS may still ask for permission again after an OS update, a signing-identity change, or installation at another path.
 
 The app does not require Accessibility permission for its global shortcut. macOS mediates clipboard access and the files you open through its regular APIs.
+
+The CLI's `--diagnostics` permission check applies to the calling process. When launched over SSH, macOS can give it a different permission context from the running GUI app. Use the app's permission indicator when checking screen access in your desktop session.
 
 ## Universal and development builds
 

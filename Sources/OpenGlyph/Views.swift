@@ -59,6 +59,13 @@ struct MenuView: View {
                     Spacer(minLength: 0)
                     Button { controller.errorMessage = nil } label: { Image(systemName: "xmark") }.buttonStyle(.plain)
                 }.padding(10).background(Color.orange.opacity(0.09), in: RoundedRectangle(cornerRadius: 7)).padding(.horizontal, 14).padding(.bottom, 10)
+            } else if let notice = controller.recognitionNotice {
+                HStack(alignment: .top, spacing: 7) {
+                    Image(systemName: "info.circle").foregroundStyle(glyphBlue)
+                    Text(notice).font(.system(size: 11)).fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                    Button { controller.recognitionNotice = nil } label: { Image(systemName: "xmark") }.buttonStyle(.plain)
+                }.padding(10).background(glyphBlue.opacity(0.07), in: RoundedRectangle(cornerRadius: 7)).padding(.horizontal, 14).padding(.bottom, 10)
             }
             HStack(spacing: 7) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
@@ -197,7 +204,7 @@ struct SettingsView: View {
                 Image(systemName: "text.viewfinder").font(.system(size: 30)).foregroundStyle(glyphBlue)
                 VStack(alignment: .leading, spacing: 3) { Text("OpenGlyph").font(.title2.weight(.semibold)); Text("Text from your screen. On your Mac.").font(.caption).foregroundStyle(.secondary) }
                 Spacer()
-                Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0").font(.caption).foregroundStyle(.secondary)
+                Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.1").font(.caption).foregroundStyle(.secondary)
             }.padding(24)
             Form {
                 Section("Capture") {

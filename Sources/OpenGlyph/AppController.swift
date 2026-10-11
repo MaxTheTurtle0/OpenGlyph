@@ -2,12 +2,14 @@ import AppKit
 import Combine
 import CoreGraphics
 import OpenGlyphCore
+import OSLog
 import ServiceManagement
 import SwiftUI
 import UniformTypeIdentifiers
 
 @MainActor
 final class AppController: NSObject, NSApplicationDelegate, ObservableObject {
+    private static let recognitionLog = Logger(subsystem: "app.openglyph.mac", category: "Recognition")
     let settings = AppSettings()
     let history = HistoryStore()
     let capture = CaptureCoordinator()
@@ -15,6 +17,7 @@ final class AppController: NSObject, NSApplicationDelegate, ObservableObject {
     @Published var busy = false
     @Published var loginNeedsApproval = false
     @Published var errorMessage: String?
+    @Published var recognitionNotice: String?
     @Published var shortcutError: String?
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
@@ -197,7 +200,11 @@ final class AppController: NSObject, NSApplicationDelegate, ObservableObject {
             do {
                 let result = try await Task.detached(priority: .userInitiated) { try OCRService.recognize(image: image, options: options) }.value
                 finish(result, source: source)
-            } catch { fail(error) }
+            } catch {
+                let failure = error as NSError
+                Self.recognitionLog.error("Image recognition failed: domain=\(failure.domain, privacy: .public), code=\(failure.code), pixels=\(image.width)x\(image.height), componentBits=\(image.bitsPerComponent), pixelBits=\(image.bitsPerPixel), rowBytes=\(image.bytesPerRow)")
+                fail(error)
+            }
         }
     }
     func recognizeFile(_ url: URL) {
@@ -222,7 +229,19 @@ final class AppController: NSObject, NSApplicationDelegate, ObservableObject {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(result.text, forType: .string)
         if settings.saveHistory { history.add(item) }
-        showToast(title: result.kind == .qrCode ? "Code copied" : "Copied to clipboard", text: result.text, success: true)
+        if result.usedFastRecovery {
+            recognitionNotice = settings.language == "auto"
+                ? "Fast backup used your preferred languages and may be less accurate. Choose a language in Settings if needed."
+                : "Fast backup recognition was used and may be less accurate."
+        } else if result.usedCompatibilityEngine {
+            recognitionNotice = settings.language == "auto"
+                ? "Backup recognition used your preferred languages. Choose a language in Settings if the text looks wrong."
+                : "Backup recognition was used for this capture."
+        } else { recognitionNotice = nil }
+        let title = result.usedFastRecovery ? "Copied using fast backup recognition"
+            : result.usedCompatibilityEngine ? "Copied using backup recognition"
+            : result.kind == .qrCode ? "Code copied" : "Copied to clipboard"
+        showToast(title: title, text: result.text, success: true)
         if result.kind == .qrCode, settings.autoOpenQRLinks, let url = item.linkURL { NSWorkspace.shared.open(url) }
     }
     private func fail(_ error: Error) {

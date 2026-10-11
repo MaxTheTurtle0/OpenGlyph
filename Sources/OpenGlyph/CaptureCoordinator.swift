@@ -25,6 +25,7 @@ final class CaptureCoordinator: ObservableObject {
     private var snapshots: [DisplaySnapshot] = []
     private var windows: [CaptureWindow] = []
     private var observers: [NSObjectProtocol] = []
+    private var workspaceObserver: NSObjectProtocol?
     private var keyMonitor: Any?
     private var anchor: CGPoint?
     private var selection: CGRect?
@@ -66,17 +67,23 @@ final class CaptureCoordinator: ObservableObject {
                         throw CaptureError.displayUnavailable
                     }
                     let filter = SCContentFilter(display: display, excludingWindows: [])
-                    let scale = max(CGFloat(filter.pointPixelScale), screen.backingScaleFactor)
-                    let width = Int(ceil(CGFloat(display.width) * scale))
-                    let height = Int(ceil(CGFloat(display.height) * scale))
-                    guard width > 0, height > 0, width <= 16_384, height <= 16_384 else {
+                    if #available(macOS 14.2, *) { filter.includeMenuBar = true }
+                    guard let pixelSize = CaptureGeometry.screenshotPixelSize(
+                        contentRect: filter.contentRect, pointPixelScale: CGFloat(filter.pointPixelScale)
+                    ) else {
                         throw CaptureError.selectionTooLarge
                     }
+                    let width = Int(pixelSize.width)
+                    let height = Int(pixelSize.height)
                     totalPixels += width * height
                     guard totalPixels <= 100_000_000 else { throw CaptureError.selectionTooLarge }
                     let configuration = SCStreamConfiguration()
                     configuration.width = width
                     configuration.height = height
+                    configuration.destinationRect = CGRect(origin: .zero, size: pixelSize)
+                    configuration.captureResolution = .best
+                    configuration.scalesToFit = true
+                    configuration.preservesAspectRatio = true
                     configuration.showsCursor = false
                     configuration.capturesAudio = false
                     let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
@@ -114,9 +121,10 @@ final class CaptureCoordinator: ObservableObject {
         // Every display is frozen before even the first overlay window becomes visible.
         for snapshot in snapshots {
             let window = CaptureWindow(
-                contentRect: snapshot.frame, styleMask: .borderless,
+                contentRect: snapshot.frame, styleMask: [.borderless, .nonactivatingPanel],
                 backing: .buffered, defer: false, screen: snapshot.screen
             )
+            window.animationBehavior = .none
             // setFrame always uses global AppKit coordinates, including displays left of the primary.
             window.setFrame(snapshot.frame, display: false)
             window.isReleasedWhenClosed = false
@@ -124,6 +132,10 @@ final class CaptureCoordinator: ObservableObject {
             window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
             window.isOpaque = true
             window.hasShadow = false
+            window.isFloatingPanel = true
+            window.becomesKeyOnlyIfNeeded = false
+            window.hidesOnDeactivate = false
+            window.worksWhenModal = true
             window.backgroundColor = .black
             window.acceptsMouseMovedEvents = true
             window.sharingType = .none
@@ -133,7 +145,7 @@ final class CaptureCoordinator: ObservableObject {
             window.makeFirstResponder(view)
             windows.append(window)
         }
-        NSApp.activate(ignoringOtherApps: true)
+        // Taking keyboard focus with a nonactivating panel avoids a Space or Stage Manager transition.
         windows.forEach { $0.orderFrontRegardless() }
         let pointer = NSEvent.mouseLocation
         let target = windows.first(where: { $0.frame.contains(pointer) }) ?? windows.first
@@ -191,14 +203,18 @@ final class CaptureCoordinator: ObservableObject {
                 self.finish(.failure(CaptureError.displayConfigurationChanged))
             }
         })
-        observers.append(center.addObserver(
-            forName: NSApplication.didResignActiveNotification, object: NSApp, queue: .main
-        ) { [weak self] _ in
+        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] notification in
+            guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
             Task { @MainActor [weak self] in
-                guard let self, !self.windows.isEmpty else { return }
+                guard let self, self.isSelecting,
+                      app.processIdentifier != self.previousApplication?.processIdentifier else { return }
+                // A deliberate app switch cancels selection without undoing the user's switch.
+                self.previousApplication = nil
                 self.cancel()
             }
-        })
+        }
     }
 
     private func finish(_ result: Result<CGImage, Error>?) {
@@ -212,6 +228,8 @@ final class CaptureCoordinator: ObservableObject {
         keyMonitor = nil
         for observer in observers { NotificationCenter.default.removeObserver(observer) }
         observers.removeAll()
+        if let workspaceObserver { NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver) }
+        workspaceObserver = nil
         for window in windows {
             window.orderOut(nil)
             window.contentView = nil
@@ -225,7 +243,8 @@ final class CaptureCoordinator: ObservableObject {
         let callback = completion
         completion = nil
         isSelecting = false
-        if previousApplication?.processIdentifier != ProcessInfo.processInfo.processIdentifier {
+        if previousApplication?.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+           previousApplication?.processIdentifier != NSWorkspace.shared.frontmostApplication?.processIdentifier {
             previousApplication?.activate(options: [])
         }
         previousApplication = nil
@@ -239,7 +258,7 @@ private struct DisplaySnapshot {
     let image: CGImage
 }
 
-private final class CaptureWindow: NSWindow {
+private final class CaptureWindow: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 }
@@ -261,10 +280,12 @@ private final class CaptureOverlayView: NSView {
     required init?(coder: NSCoder) { nil }
     override var acceptsFirstResponder: Bool { true }
     override var isOpaque: Bool { true }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     override func resetCursorRects() { addCursorRect(bounds, cursor: .crosshair) }
 
     override func draw(_ dirtyRect: NSRect) {
+        NSGraphicsContext.current?.imageInterpolation = .none
         backgroundImage.draw(in: bounds, from: .zero, operation: .copy, fraction: 1)
         NSColor.black.withAlphaComponent(0.38).setFill()
         bounds.fill()

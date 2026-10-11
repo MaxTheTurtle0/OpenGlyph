@@ -14,7 +14,7 @@ for argument in "$@"; do
     esac
 done
 
-app_version="${APP_VERSION:-0.1.0}"
+app_version="${APP_VERSION:-0.1.1}"
 app_version="${app_version#v}"
 build_number="${APP_BUILD_NUMBER:-1}"
 if [[ ! "$app_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || [[ ! "$build_number" =~ ^[0-9]+$ ]]; then
