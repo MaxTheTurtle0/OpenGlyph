@@ -1,0 +1,61 @@
+name: macOS
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    env:
+      CODE_SIGN_IDENTITY: "-"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select release version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: echo "APP_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+      - name: Check toolchain
+        run: swift --version
+      - name: Test recognition and persistence
+        run: swift test
+      - name: Build universal application
+        run: ./scripts/build-app.sh --universal
+      - name: Package application
+        run: ./scripts/package.sh --skip-build
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: OpenGlyph-macos
+          path: build/dist/*
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: OpenGlyph-macos
+          path: dist
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes \
+              --title "OpenGlyph ${GITHUB_REF_NAME#v}" \
+              --notes "Native macOS 14+ app for Apple Silicon and Intel. Recognition stays on your Mac. This community build is ad-hoc signed and is not Apple-notarized. See docs/BUILDING.md for installation and signing instructions."
+          fi
+          gh release upload "$GITHUB_REF_NAME" dist/* --clobber
