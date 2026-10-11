@@ -19,7 +19,7 @@ Language availability comes from Apple Vision on your macOS version. Clear handw
 
 ## Install on a Mac
 
-macOS 14 or later, Apple Silicon or Intel. Download a release archive, unzip it, and move OpenGlyph.app into Applications. Local builds are ad-hoc signed; public builds are not Apple-notarized. See [building and signing](docs/BUILDING.md) for details.
+macOS 14 or later, Apple Silicon or Intel. [Download a release archive](https://github.com/MaxTheTurtle0/OpenGlyph/releases/latest), unzip it, and move OpenGlyph.app into Applications. Local builds are ad-hoc signed; public builds are not Apple-notarized. See [building and signing](docs/BUILDING.md) for details.
 
 On first launch, follow onboarding. For screen capture, grant OpenGlyph permission in **System Settings → Privacy & Security → Screen & System Audio Recording**. macOS may require quitting and reopening the app after granting permission. File and clipboard imports work without screen access.
 

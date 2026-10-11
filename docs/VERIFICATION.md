@@ -4,7 +4,8 @@ Verified on 11 October 2026. Development host: Apple M4 Mac mini, macOS 27.0.1. 
 
 ## Completed checks
 
-- `swift test`: 31 tests passed, including actual Apple Vision recognition and locally generated fixtures.
+- `swift test`: 31 tests passed on the development host and GitHub's macOS runner, including actual Apple Vision recognition and locally generated fixtures.
+- `swift test --build-system native`: all 31 tests passed on the M3 MacBook Air with Swift 6.4 / Xcode 27, using the unchanged source. See the toolchain limitation below.
 - Text OCR with line breaks, flattened output, accurate/fast modes, language availability, and web-link classification.
 - QR payload precedence, Code128 barcodes, PNG/JPEG/TIFF/HEIC imports, EXIF orientation, and rotated PDF pages.
 - Multi-page PDFs with blank-page skipping, locked PDFs, file/page limits, local history bounds, persistence failures, and settings reload.
@@ -14,7 +15,15 @@ Verified on 11 October 2026. Development host: Apple M4 Mac mini, macOS 27.0.1. 
 - Native SwiftUI menu, settings, onboarding, and detail screens rendered and visually inspected in light and dark appearances.
 - Running app on the development host imported a file and a QR code, recognized text, wrote the expected clipboard content, and persisted history. A clipboard image invoked through `openglyph://clipboard` passed the same pipeline.
 - Release archive transferred to the MacBook Air. Its checksum and installed app signature verified there. App installed at `~/Applications/OpenGlyph.app`, launched in the logged-in user's session, and reported version 0.1.0 with the expected Vision languages.
+- The Air's installed executable recognized text and QR fixtures. Its running app imported text fixtures from files and the clipboard, copied the results, and persisted history. Native interface previews were rendered on the Air.
+- Source checkout at `~/code/OpenGlyph` registered as the OpenGlyph project in T3 Code on the MacBook Air.
 - Independent source review resolved paste-focus restoration, multi-display composition, login-item approval visibility, and shortcut recording/conflict issues. Final assessment found no material code defects, with live interaction checks pending.
+
+## Developer toolchain limitation
+
+The Air's default Swift 6.4 SwiftBuild test host failed nine accurate-Vision checks with an Apple `e5rt` compute error. Running the unchanged suite with Swift's native build system passed all 31 checks. The failing test bundle reported linked SDK 14.0; the passing native test bundle reported SDK 27.0. This difference may explain the failure, but its cause is not established. No assertions were skipped, and no recognition-engine downgrade was added.
+
+First accurate recognition requests on the Air also waited for Apple's local Neural Engine model compiler. The installed app's standalone recognition completed successfully after compilation. These delays and the test-host failure are recorded separately from app acceptance.
 
 ## Manual acceptance still needed
 
