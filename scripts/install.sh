@@ -29,6 +29,7 @@ fi
 
 install_root="${INSTALL_DIR:-$HOME/Applications}"
 mkdir -p "$install_root"
+install_root="$(cd "$install_root" && pwd -P)"
 destination="$install_root/OpenGlyph.app"
 if [[ -L "$destination" ]]; then
     printf 'Refusing to replace a symbolic link at %s.\n' "$destination" >&2
@@ -52,8 +53,9 @@ trap cleanup EXIT
 ditto "$source_app" "$install_stage/OpenGlyph.app"
 codesign --verify --strict --verbose=2 "$install_stage/OpenGlyph.app"
 
-# NSRunningApplication uses the bundle identifier. No process-name matching or killall.
-xcrun swift "$repo_root/scripts/terminate-app.swift"
+# Pass the destination before moving it. SSH sessions may not see GUI apps via
+# NSRunningApplication, so the helper also checks exact same-user executable paths.
+xcrun swift "$repo_root/scripts/terminate-app.swift" "$destination/Contents/MacOS/OpenGlyph"
 if [[ -e "$destination" || -L "$destination" ]]; then
     mv "$destination" "$install_stage/previous.app"
 fi

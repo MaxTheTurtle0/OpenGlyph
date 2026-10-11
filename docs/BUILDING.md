@@ -16,7 +16,7 @@ swift test
 ./scripts/install.sh --skip-build
 ```
 
-The build produces `build/OpenGlyph.app`. The installer verifies the app's signature, asks a running OpenGlyph instance to quit, installs into `~/Applications/OpenGlyph.app`, registers its file and URL handlers, and opens it. OpenGlyph appears in the menu bar. The installer stops if the running app does not quit within ten seconds.
+The build produces `build/OpenGlyph.app`. The installer verifies the app's signature, asks the installed OpenGlyph instance to quit, installs into `~/Applications/OpenGlyph.app`, registers its file and URL handlers, and opens it. OpenGlyph appears in the menu bar. Over SSH, if macOS hides the GUI instance from `NSRunningApplication`, the installer verifies the process's executable path, owner, and start time before sending SIGTERM. It refuses replacement if the installed app remains running after ten seconds.
 
 Version 0.1.1 passes the test suite with both the default SwiftBuild runner and `swift test --build-system native` on the tested Swift 6.4 / Xcode 27 toolchain. The native option is deprecated in Swift 6.4. See [verification notes](VERIFICATION.md) for the recognition failure reproduced on that Mac and the recovery behavior.
 

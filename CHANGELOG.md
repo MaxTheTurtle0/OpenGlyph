@@ -6,6 +6,7 @@
 - Normalize screen and imported images to opaque 8-bit sRGB, pad tight crops, and skip uniform images.
 - Remove app activation and window animation when selection starts. Use ScreenCaptureKit's pixel scale for scaled Retina displays.
 - Cancel selection on deliberate app switches without restoring the previous app over the user's choice.
+- Detect the installed app's process over SSH and stop it before replacing the bundle.
 - Add repeated-crop, image-format, backup-language, tiny-image, and scaled-display regression checks. All 46 tests pass on the tested MacBook Air and Mac mini.
 
 ## 0.1.0

@@ -27,6 +27,7 @@ Selection uses nonactivating panels with window animation disabled, and no longe
 - Twelve capture geometry tests, including exact pixel checks for vertically stacked, staggered, and mixed Retina/1x displays, plus screenshot sizing for scaled displays. Fragments retain orientation, and gaps stay blank.
 - Native and universal release builds. Both arm64 and x86_64 slices have macOS 14 deployment targets.
 - Bundle signatures, extracted ZIP integrity, and ZIP/DMG SHA-256 checksums.
+- SSH installer detection verified against the Air's unchanged running process. Isolated native process tests terminated only the exact target, preserved a same-name sibling, and refused replacement when a target ignored SIGTERM. The refusal preserved the existing executable and cleaned staging; a relative installation directory also passed.
 - Native SwiftUI menu, settings, onboarding, and detail screens rendered and visually inspected in light and dark appearances. The new backup notice was rendered and checked for layout.
 - Version 0.1.1 archive transferred to the MacBook Air, checksum verified, installed at `~/Applications/OpenGlyph.app`, and signature verified. After explicitly restarting the previous process, the new running process mapped the installed executable.
 - The Air's installed running app recognized six serial file imports, copied the expected text, and persisted history. Earlier file, QR, and clipboard-image acceptance also passed on 0.1.0.
