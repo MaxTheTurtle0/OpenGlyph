@@ -64,6 +64,13 @@ def summarize(directory):
                                            if finite(process.get('neural', {}).get('neural_footprint_bytes')) else None),
                                cpu_percent=metrics.get('interval_cpu_percent') if valid_cpu else None,
                                valid_interval_seconds=interval if valid_cpu else None,
+                               cumulative_cpu_seconds=(metrics['user_cpu_ns'] + metrics['system_cpu_ns']) / 1e9,
+                               lifetime_peak_footprint_mib=metrics['lifetime_peak_physical_footprint_bytes'] / MIB,
+                               cumulative_disk_read_bytes=metrics['disk_read_bytes_total'],
+                               cumulative_disk_written_bytes=metrics['disk_written_bytes_total'],
+                               cumulative_pageins=metrics['pageins_total'],
+                               cumulative_interrupt_wakeups=metrics['interrupt_wakeups_total'],
+                               cumulative_package_idle_wakeups=metrics['package_idle_wakeups_total'],
                                threads=process.get('threads'), gap=gap,
                                host_cpu_percent=row.get('host', {}).get('cpu_busy_percent') if not gap else None,
                                system_swap_mib=(row['host']['swap_used_bytes'] / MIB if finite(row.get('host', {}).get('swap_used_bytes')) else None),
@@ -77,6 +84,7 @@ def summarize(directory):
                    samples=len(rows), malformed_lines=malformed, primary_identity=primary,
                    identities_observed=dict(counts), valid_cpu_coverage_seconds=sum(dt for _, dt in cpu),
                    cpu_average_percent=weighted(cpu), cpu_distribution=distribution([v for v, _ in cpu]),
+                   cpu_seconds_in_valid_intervals=sum(v * dt / 100 for v, dt in cpu),
                    footprint_mib=distribution([p['footprint_mib'] for p in series]),
                    resident_mib=distribution([p['resident_mib'] for p in series]),
                    neural_mib=distribution([p['neural_mib'] for p in series]),
@@ -93,6 +101,13 @@ def summarize(directory):
         last_window = [p['footprint_mib'] for p in series if p['elapsed_seconds'] >= series[-1]['elapsed_seconds'] - 300]
         summary['first_five_minutes_footprint_median_mib'] = statistics.median(first_window)
         summary['last_five_minutes_footprint_median_mib'] = statistics.median(last_window)
+        summary['observed_process_span_seconds'] = series[-1]['elapsed_seconds'] - series[0]['elapsed_seconds']
+        summary['lifetime_peak_first_mib'] = series[0]['lifetime_peak_footprint_mib']
+        summary['lifetime_peak_last_mib'] = series[-1]['lifetime_peak_footprint_mib']
+        for column in ('cumulative_cpu_seconds', 'cumulative_disk_read_bytes', 'cumulative_disk_written_bytes',
+                       'cumulative_pageins', 'cumulative_interrupt_wakeups', 'cumulative_package_idle_wakeups'):
+            difference = series[-1][column] - series[0][column]
+            summary[column.removeprefix('cumulative_') + '_during_observed_span'] = difference if difference >= 0 else None
     return summary, series
 
 def main():
