@@ -38,15 +38,16 @@ Selection uses nonactivating panels with window animation disabled, and no longe
 
 The user granted Screen Recording permission and performed real screen captures before reporting the failure. An SSH-launched diagnostics process can report a different permission context; that result does not establish the running GUI app's permission.
 
-Native UI automation returned `Sky Computer Use service startup request failed`. Automated drag, focus, cancellation, and visual activation acceptance are therefore not claimed. On the MacBook Air:
+The user tested version 0.1.1 on the MacBook Air and confirmed that screen captures work and the desktop stays still when selection starts. This confirms the reported recognition and activation fixes in real use.
 
-1. With another app active, press Command-Shift-2 several times and select readable screen text. Confirm recognition succeeds and the desktop stays still when selection begins.
-2. Paste into the original app and confirm focus is retained.
-3. Start a capture and cancel with Escape, then right-click. Confirm normal cursor and focus return.
-4. Switch apps or Spaces during selection. Confirm selection cancels without undoing the switch.
-5. Set a custom shortcut. Try a conflicting shortcut and confirm the error remains visible and the previous shortcut still works.
-6. Try a QR code, clipboard image, and PDF through the menu. Search, filter, copy, view full text, and remove a test history item.
-7. If desired, enable launch at login, approve it in macOS Login Items, and confirm after logging in again.
-8. On a multi-monitor setup, test a selection on each screen and across screens.
+Native UI automation returned `Sky Computer Use service startup request failed`. Automated drag, focus, cancellation, and visual activation acceptance are therefore not claimed. Additional manual checks on the MacBook Air:
+
+1. Paste into the original app and confirm focus is retained.
+2. Start a capture and cancel with Escape, then right-click. Confirm normal cursor and focus return.
+3. Switch apps or Spaces during selection. Confirm selection cancels without undoing the switch.
+4. Set a custom shortcut. Try a conflicting shortcut and confirm the error remains visible and the previous shortcut still works.
+5. Try a QR code, clipboard image, and PDF through the menu. Search, filter, copy, view full text, and remove a test history item.
+6. If desired, enable launch at login, approve it in macOS Login Items, and confirm after logging in again.
+7. On a multi-monitor setup, test a selection on each screen and across screens.
 
 Intel binaries compile, but runtime acceptance on an Intel Mac has not been performed. Windows and Linux are not implemented. Public archives are ad-hoc signed and are not Apple-notarized.
