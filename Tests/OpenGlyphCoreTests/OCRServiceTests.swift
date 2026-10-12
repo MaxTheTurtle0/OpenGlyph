@@ -401,4 +401,175 @@ final class OCRServiceTests: XCTestCase {
         })
         XCTAssertEqual(calls, 1)
     }
+
+    func testRepeatedRecoveriesSkipAccurateUntilCooldownExpires() throws {
+        var now: TimeInterval = 0
+        let policy = OCRRecoveryPolicy(clock: { now })
+        let image = try textImage(lines: ["COOLDOWN RECOVERY"])
+        func recognize() throws -> [VNRequestTextRecognitionLevel] {
+            var levels: [VNRequestTextRecognitionLevel] = []
+            let result = try OCRService.recognizeText(in: image, options: RecognitionOptions(language: "en-US"), policy: policy) { image, request in
+                levels.append(request.recognitionLevel)
+                XCTAssertEqual(request.recognitionLanguages, ["en-US"])
+                if request.recognitionLevel == .accurate { throw NSError(domain: "TextRecognition.CRImageReaderError", code: 1) }
+                try VNImageRequestHandler(cgImage: image).perform([request])
+            }
+            XCTAssertTrue(result.usedCompatibilityEngine)
+            XCTAssertTrue(result.usedFastRecovery)
+            XCTAssertEqual(result.request.results?.compactMap { $0.topCandidates(1).first?.string }, ["COOLDOWN RECOVERY"])
+            return levels
+        }
+        XCTAssertEqual(try recognize(), [.accurate, .accurate, .fast])
+        XCTAssertEqual(try recognize(), [.accurate, .accurate, .fast])
+        now = 30
+        XCTAssertEqual(try recognize(), [.fast])
+        now = 60
+        XCTAssertEqual(try recognize(), [.accurate, .accurate, .fast])
+    }
+
+    func testAccurateSuccessClearsRecoveredFailureStreak() throws {
+        let policy = OCRRecoveryPolicy(clock: { 0 })
+        let options = RecognitionOptions(language: "en-US")
+        let key = OCRRecoveryPolicy.Configuration(language: options.language, revision: VNRecognizeTextRequest.defaultRevision)
+        policy.recordRecoveredComputeFailure(for: key)
+        let result = try OCRService.recognizeText(in: textImage(), options: options, policy: policy) { _, request in
+            XCTAssertEqual(request.recognitionLevel, .accurate)
+        }
+        XCTAssertFalse(result.usedFastRecovery)
+        XCTAssertEqual(policy.configurationCount, 0)
+        policy.recordRecoveredComputeFailure(for: key)
+        XCTAssertFalse(policy.shouldUseFast(for: key))
+    }
+
+    func testEmptyFastResultNeverActivatesCooldown() throws {
+        let policy = OCRRecoveryPolicy(clock: { 0 })
+        let image = try textImage()
+        for _ in 0..<3 {
+            var levels: [VNRequestTextRecognitionLevel] = []
+            let result = try OCRService.recognizeText(in: image, options: RecognitionOptions(language: "en-US"), policy: policy) { _, request in
+                levels.append(request.recognitionLevel)
+                if request.recognitionLevel == .accurate { throw NSError(domain: "TextRecognition.CRImageReaderError", code: 1) }
+            }
+            XCTAssertEqual(levels, [.accurate, .accurate, .fast])
+            XCTAssertNil(result.request.results)
+            XCTAssertEqual(policy.configurationCount, 0)
+        }
+    }
+
+    func testEmptyFastResultDuringCooldownRestoresAccurateProbe() throws {
+        let policy = OCRRecoveryPolicy(clock: { 0 })
+        let options = RecognitionOptions(language: "en-US")
+        let key = OCRRecoveryPolicy.Configuration(language: options.language, revision: VNRecognizeTextRequest.defaultRevision)
+        policy.recordRecoveredComputeFailure(for: key)
+        policy.recordRecoveredComputeFailure(for: key)
+        let result = try OCRService.recognizeText(in: textImage(), options: options, policy: policy) { _, request in
+            XCTAssertEqual(request.recognitionLevel, .fast)
+        }
+        XCTAssertNil(result.request.results)
+        XCTAssertFalse(policy.shouldUseFast(for: key))
+    }
+
+    func testUnrelatedErrorsAndFailedFastRecoveryBreakFailureStreak() throws {
+        let options = RecognitionOptions(language: "en-US")
+        let key = OCRRecoveryPolicy.Configuration(language: options.language, revision: VNRecognizeTextRequest.defaultRevision)
+        let image = try textImage()
+        let errors: [Error] = [OCRServiceError.noContent, NSError(domain: VNErrorDomain, code: VNErrorCode.requestCancelled.rawValue),
+                               NSError(domain: "Fixture", code: 9)]
+        for error in errors {
+            for failFast in [false, true] {
+                let policy = OCRRecoveryPolicy(clock: { 0 })
+                policy.recordRecoveredComputeFailure(for: key)
+                var levels: [VNRequestTextRecognitionLevel] = []
+                XCTAssertThrowsError(try OCRService.recognizeText(in: image, options: options, policy: policy) { _, request in
+                    levels.append(request.recognitionLevel)
+                    if failFast && request.recognitionLevel == .accurate {
+                        throw NSError(domain: "TextRecognition.CRImageReaderError", code: 1)
+                    }
+                    throw error
+                }) {
+                    XCTAssertEqual(($0 as NSError).domain, (error as NSError).domain)
+                    XCTAssertEqual(($0 as NSError).code, (error as NSError).code)
+                }
+                XCTAssertEqual(levels, failFast ? [.accurate, .accurate, .fast] : [.accurate])
+                XCTAssertEqual(policy.configurationCount, 0)
+            }
+        }
+    }
+
+    func testUnavailableFastLanguageNeverActivatesCooldown() throws {
+        let policy = OCRRecoveryPolicy(clock: { 0 })
+        for _ in 0..<3 {
+            var calls = 0
+            XCTAssertThrowsError(try OCRService.recognizeText(in: textImage(), options: RecognitionOptions(language: "ja-JP"), policy: policy) { _, request in
+                calls += 1
+                XCTAssertEqual(request.recognitionLanguages, ["ja-JP"])
+                throw NSError(domain: "TextRecognition.CRImageReaderError", code: 1)
+            }) { XCTAssertEqual(($0 as NSError).domain, "TextRecognition.CRImageReaderError") }
+            XCTAssertEqual(calls, 1)
+            XCTAssertEqual(policy.configurationCount, 0)
+        }
+    }
+
+    func testCooldownCancellationPropagatesAndRestoresAccurateProbe() throws {
+        let policy = OCRRecoveryPolicy(clock: { 0 })
+        let options = RecognitionOptions(language: "en-US")
+        let key = OCRRecoveryPolicy.Configuration(language: options.language, revision: VNRecognizeTextRequest.defaultRevision)
+        policy.recordRecoveredComputeFailure(for: key)
+        policy.recordRecoveredComputeFailure(for: key)
+        var levels: [VNRequestTextRecognitionLevel] = []
+        XCTAssertThrowsError(try OCRService.recognizeText(in: textImage(), options: options, policy: policy) { _, request in
+            levels.append(request.recognitionLevel)
+            throw NSError(domain: VNErrorDomain, code: VNErrorCode.requestCancelled.rawValue)
+        }) {
+            XCTAssertEqual(($0 as NSError).code, VNErrorCode.requestCancelled.rawValue)
+        }
+        XCTAssertEqual(levels, [.fast])
+        XCTAssertFalse(policy.shouldUseFast(for: key))
+        levels.removeAll()
+        _ = try OCRService.recognizeText(in: textImage(), options: options, policy: policy) { _, request in
+            levels.append(request.recognitionLevel)
+        }
+        XCTAssertEqual(levels, [.accurate])
+    }
+
+    func testFastPreferenceDoesNotUseOrMutateAccurateCooldown() throws {
+        let policy = OCRRecoveryPolicy(clock: { 0 })
+        let key = OCRRecoveryPolicy.Configuration(language: "en-US", revision: VNRecognizeTextRequest.defaultRevision)
+        policy.recordRecoveredComputeFailure(for: key)
+        policy.recordRecoveredComputeFailure(for: key)
+        let result = try OCRService.recognizeText(in: textImage(), options: RecognitionOptions(mode: .fast, language: "en-US"), policy: policy) { _, request in
+            XCTAssertEqual(request.recognitionLevel, .fast)
+        }
+        XCTAssertFalse(result.usedCompatibilityEngine)
+        XCTAssertFalse(result.usedFastRecovery)
+        XCTAssertTrue(policy.shouldUseFast(for: key))
+    }
+
+    func testUnsupportedLanguageIsNotReplacedByCachedRecovery() throws {
+        let policy = OCRRecoveryPolicy(clock: { 0 })
+        let key = OCRRecoveryPolicy.Configuration(language: "en-US", revision: VNRecognizeTextRequest.defaultRevision)
+        policy.recordRecoveredComputeFailure(for: key)
+        policy.recordRecoveredComputeFailure(for: key)
+        var calls = 0
+        XCTAssertThrowsError(try OCRService.recognizeText(in: textImage(), options: RecognitionOptions(language: "nonexistent-language"), policy: policy) { _, _ in
+            calls += 1
+        }) { XCTAssertEqual($0 as? OCRServiceError, .unsupportedLanguage("nonexistent-language")) }
+        XCTAssertEqual(calls, 0)
+        XCTAssertTrue(policy.shouldUseFast(for: key))
+    }
+
+    func testFailedAccurateRequestsAreReleasedBeforeNextEngineStarts() throws {
+        weak var previousRequest: VNRecognizeTextRequest?
+        var levels: [VNRequestTextRecognitionLevel] = []
+        let result = try OCRService.recognizeText(in: textImage(lines: ["RELEASED REQUESTS"]), options: RecognitionOptions(language: "en-US")) { image, request in
+            XCTAssertNil(previousRequest)
+            previousRequest = request
+            levels.append(request.recognitionLevel)
+            if request.recognitionLevel == .accurate { throw NSError(domain: "TextRecognition.CRImageReaderError", code: 1) }
+            try VNImageRequestHandler(cgImage: image).perform([request])
+        }
+        XCTAssertEqual(levels, [.accurate, .accurate, .fast])
+        XCTAssertNotNil(previousRequest)
+        XCTAssertTrue(result.usedFastRecovery)
+    }
 }

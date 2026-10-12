@@ -33,3 +33,27 @@ This writes `summary.json` and `series.csv`. The summary uses the process identi
 - The sampler records its own CPU and memory use so collection overhead is visible.
 
 One hour of normal use can show observed memory growth and CPU activity. It does not establish maximum recognition cost or prove that every workload is free of leaks. Compare similar workloads, distinguish model initialization from steady use, and disclose sleep or sampling gaps.
+
+## Compare recognition changes
+
+The developer benchmark generates twelve dense text images, six 1080p and six 4K, followed by eight small-text, language, and QR fixtures. Generation runs separately from recognition. It never reads the screen, updates history, or touches the clipboard.
+
+```sh
+BENCHMARK_BINARY=/tmp/ocr-baseline CORE_SOURCE_DIR=/absolute/baseline/OpenGlyphCore \
+  scripts/benchmark-ocr.sh --build-only
+/tmp/ocr-baseline generate --fixtures-dir /tmp/ocr-fixtures
+/tmp/ocr-baseline run --fixtures-dir /tmp/ocr-fixtures --label baseline \
+  --idle-seconds 30 --output /tmp/ocr-baseline.json
+
+BENCHMARK_BINARY=/tmp/ocr-candidate scripts/benchmark-ocr.sh --build-only
+/tmp/ocr-candidate run --fixtures-dir /tmp/ocr-fixtures --label candidate \
+  --idle-seconds 30 --output /tmp/ocr-candidate.json
+```
+
+Use the same generated fixture directory for both builds. The tool checks its manifest and image SHA-256 values before recognition. Compile both with the same SDK; the script sets the app's macOS 14 deployment target. The default execution context runs serial `Task.detached` jobs like the app, and records whether each recognition actually ran on the main thread. `--execution-context main` is available for a separate comparison. `--start-delay-seconds 20` leaves time for attaching a profiler.
+
+Latency covers the file-recognition pipeline and worker dispatch/resumption, excluding fixture generation, validation, quality scoring, and idle sampling. CPU counters immediately bracket recognition. Process CPU excludes helper services, GPU, and Neural Engine execution. Compare the first call separately from steady calls because Vision can initialize a model for tens of seconds.
+
+The JSON contains footprint, RSS, allocator in-use/reserved bytes, native CPU, thermal state, and memory-pressure observations. Allocator statistics are separate from physical footprint. Kernel lifetime peaks belong to the entire fresh benchmark process, including tool overhead and all twenty fixtures; use the twelfth case's after-sample to isolate the dense-grid stage. These are observations of a short synthetic workload, not a substitute for profiling the installed GUI over time. Reject runs affected by sleep or suspend, and repeat comparisons if model initialization or system pressure makes them uncertain.
+
+Text correctness is recorded as counts, error rates, and normalized output hashes; recognized text is not serialized. Dense-grid token precision/recall/F1 retains duplicate counts but ignores reading order. The smaller fixtures also report normalized exact matches and character error rates. Compare both completion and correctness; an import can complete with transcription mistakes. Check backup flags before comparing Accurate and Fast measurements.
