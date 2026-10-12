@@ -42,6 +42,7 @@ public enum OCRService {
     private static let maximumResultCharacters = 1_000_000
     private static let maximumDecodedDimension = 8_192
     private static let logger = Logger(subsystem: "app.openglyph.mac", category: "Recognition")
+    private static let recoveryPolicy = OCRRecoveryPolicy()
 
     public static func recognize(image: CGImage, options: RecognitionOptions = RecognitionOptions()) throws -> RecognitionResult {
         try autoreleasepool {
@@ -50,23 +51,25 @@ public enum OCRService {
     }
 
     private static func recognizeImage(_ image: CGImage, options: RecognitionOptions) throws -> RecognitionResult {
-        guard image.width > 0, image.height > 0,
-              image.width <= maximumImagePixels / image.height else { throw OCRServiceError.imageTooLarge }
-        let preparedImage = try prepareImage(image)
-        let handler = VNImageRequestHandler(cgImage: preparedImage, orientation: .up)
+        let preparedImage = try autoreleasepool { try prepareImage(image) }
+        return try recognizePreparedImage(preparedImage, options: options)
+    }
 
+    private static func recognizePreparedImage(_ image: CGImage, options: RecognitionOptions) throws -> RecognitionResult {
         // Decode codes first so printed captions do not replace a QR payload.
-        let barcodes = VNDetectBarcodesRequest()
-        try handler.perform([barcodes])
-        let payloads = inReadingOrder(barcodes.results ?? [])
-            .compactMap(\.payloadStringValue).filter { !$0.isEmpty }
+        // Release its handler and request before starting a text engine.
+        let payloads = try autoreleasepool {
+            let barcodes = VNDetectBarcodesRequest()
+            try VNImageRequestHandler(cgImage: image, orientation: .up).perform([barcodes])
+            return inReadingOrder(barcodes.results ?? []).compactMap(\.payloadStringValue).filter { !$0.isEmpty }
+        }
         if !payloads.isEmpty {
             let text = payloads.joined(separator: options.keepLineBreaks ? "\n" : " ")
             guard text.count <= maximumResultCharacters else { throw OCRServiceError.resultTooLarge }
             return RecognitionResult(text: text, kind: .qrCode)
         }
 
-        let execution = try recognizeText(in: preparedImage, options: options)
+        let execution = try recognizeText(in: image, options: options, policy: recoveryPolicy)
         let request = execution.request
         let lines = inReadingOrder(request.results ?? []).compactMap { $0.topCandidates(1).first?.string }
         let text = lines.joined(separator: options.keepLineBreaks ? "\n" : " ")
@@ -78,6 +81,10 @@ public enum OCRService {
     }
 
     public static func recognize(fileURL: URL, options: RecognitionOptions = RecognitionOptions()) throws -> RecognitionResult {
+        try autoreleasepool { try recognizeFile(fileURL: fileURL, options: options) }
+    }
+
+    private static func recognizeFile(fileURL: URL, options: RecognitionOptions) throws -> RecognitionResult {
         guard fileURL.isFileURL else { throw OCRServiceError.unreadableFile }
         let values: URLResourceValues
         do { values = try fileURL.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]) }
@@ -88,6 +95,13 @@ public enum OCRService {
         if fileURL.pathExtension.lowercased() == "pdf" {
             return try recognizePDF(fileURL: fileURL, options: options)
         }
+        // The decoder and decoded source image leave this pool before Vision
+        // sees the independent normalized bitmap.
+        let prepared = try autoreleasepool { try prepareImage(decodeImage(fileURL: fileURL)) }
+        return try recognizePreparedImage(prepared, options: options)
+    }
+
+    private static func decodeImage(fileURL: URL) throws -> CGImage {
         guard let source = CGImageSourceCreateWithURL(fileURL as CFURL, nil),
               let identifier = CGImageSourceGetType(source) as String?,
               [UTType.png.identifier, UTType.jpeg.identifier, UTType.tiff.identifier,
@@ -110,13 +124,15 @@ public enum OCRService {
         guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbnailOptions as CFDictionary) else {
             throw OCRServiceError.unreadableFile
         }
-        return try recognize(image: image, options: options)
+        return image
     }
 
     public static func supportedLanguages(mode: RecognitionMode) -> [String] {
-        let request = VNRecognizeTextRequest()
-        request.recognitionLevel = mode == .accurate ? .accurate : .fast
-        return (try? request.supportedRecognitionLanguages()) ?? []
+        autoreleasepool {
+            let request = VNRecognizeTextRequest()
+            request.recognitionLevel = mode == .accurate ? .accurate : .fast
+            return (try? request.supportedRecognitionLanguages()) ?? []
+        }
     }
 
     private static func textRequest(options: RecognitionOptions, revision: Int? = nil) throws -> VNRecognizeTextRequest {
@@ -144,44 +160,95 @@ public enum OCRService {
     }
 
     // Internal execution hook lets tests fail the primary engine while still
-    // exercising actual Vision recognition through the compatibility engine.
+    // exercising Vision recovery. A fresh default policy keeps injected failures
+    // independent; production supplies its process-wide policy explicitly.
     static func recognizeText(in image: CGImage, options: RecognitionOptions,
+                              policy: OCRRecoveryPolicy = OCRRecoveryPolicy(),
                               perform: (CGImage, VNRecognizeTextRequest) throws -> Void = { image, request in
                                   try VNImageRequestHandler(cgImage: image, orientation: .up).perform([request])
                               }) throws -> (request: VNRecognizeTextRequest, usedCompatibilityEngine: Bool, usedFastRecovery: Bool) {
         try autoreleasepool {
-            try recognizeTextExecution(in: image, options: options, perform: perform)
+            try recognizeTextExecution(in: image, options: options, policy: policy, perform: perform)
         }
     }
 
-    private static func recognizeTextExecution(in image: CGImage, options: RecognitionOptions,
+    private static func recognizeTextExecution(in image: CGImage, options: RecognitionOptions, policy: OCRRecoveryPolicy,
                                                perform: (CGImage, VNRecognizeTextRequest) throws -> Void) throws -> (request: VNRecognizeTextRequest, usedCompatibilityEngine: Bool, usedFastRecovery: Bool) {
-        let request = try textRequest(options: options)
+        let configuration = OCRRecoveryPolicy.Configuration(language: options.language, revision: VNRecognizeTextRequest.defaultRevision)
+        var fastOptions = options
+        fastOptions.mode = .fast
+        if options.mode == .accurate, policy.shouldUseFast(for: configuration) {
+            do {
+                let fast = try performTextRequest(in: image, options: fastOptions, perform: perform)
+                if !hasReadableText(fast) { policy.reset(for: configuration) }
+                return (fast, true, true)
+            } catch {
+                policy.reset(for: configuration)
+                throw error
+            }
+        }
+
         do {
-            try perform(image, request)
+            let request = try performTextRequest(in: image, options: options, perform: perform)
+            if options.mode == .accurate { policy.reset(for: configuration) }
             return (request, false, false)
         } catch {
-            guard isComputeFailure(error), options.mode == .accurate else { throw error }
+            guard isComputeFailure(error), options.mode == .accurate else {
+                if options.mode == .accurate { policy.reset(for: configuration) }
+                throw error
+            }
             let originalError = error
             let nativeError = originalError as NSError
-            if request.revision > 2, VNRecognizeTextRequest.supportedRevisions.contains(2),
-               let retry = try? textRequest(options: options, revision: 2) {
+            if VNRecognizeTextRequest.defaultRevision > 2, VNRecognizeTextRequest.supportedRevisions.contains(2) {
                 logger.warning("OCR compute failure; retrying accurate compatibility engine. Domain=\(nativeError.domain, privacy: .public), code=\(nativeError.code, privacy: .public)")
                 do {
-                    try perform(image, retry)
-                    return (retry, true, false)
+                    if let retry = try performOptionalTextRequest(in: image, options: options, revision: 2, perform: perform) {
+                        policy.reset(for: configuration)
+                        return (retry, true, false)
+                    }
                 } catch {
-                    guard isComputeFailure(error) else { throw error }
+                    guard isComputeFailure(error) else { policy.reset(for: configuration); throw error }
                 }
             }
-            var fastOptions = options
-            fastOptions.mode = .fast
             // Supported language checks also apply to the fast engine. Never
             // silently replace an explicit unsupported language with English.
-            guard let fast = try? textRequest(options: fastOptions) else { throw originalError }
             logger.warning("Accurate OCR compute failure; using fast recovery engine. Domain=\(nativeError.domain, privacy: .public), code=\(nativeError.code, privacy: .public)")
-            try perform(image, fast)
-            return (fast, true, true)
+            do {
+                guard let fast = try performOptionalTextRequest(in: image, options: fastOptions, perform: perform) else {
+                    policy.reset(for: configuration)
+                    throw originalError
+                }
+                if hasReadableText(fast) { policy.recordRecoveredComputeFailure(for: configuration) }
+                else { policy.reset(for: configuration) }
+                return (fast, true, true)
+            } catch {
+                policy.reset(for: configuration)
+                throw error
+            }
+        }
+    }
+
+    private static func performTextRequest(in image: CGImage, options: RecognitionOptions,
+                                          perform: (CGImage, VNRecognizeTextRequest) throws -> Void) throws -> VNRecognizeTextRequest {
+        try autoreleasepool {
+            let request = try textRequest(options: options)
+            try perform(image, request)
+            return request
+        }
+    }
+
+    private static func performOptionalTextRequest(in image: CGImage, options: RecognitionOptions, revision: Int? = nil,
+                                                  perform: (CGImage, VNRecognizeTextRequest) throws -> Void) throws -> VNRecognizeTextRequest? {
+        try autoreleasepool {
+            guard let request = try? textRequest(options: options, revision: revision) else { return nil }
+            try perform(image, request)
+            return request
+        }
+    }
+
+    private static func hasReadableText(_ request: VNRecognizeTextRequest) -> Bool {
+        (request.results ?? []).contains {
+            !($0.topCandidates(1).first?.string.trimmingCharacters(in: .whitespacesAndNewlines) ?? "").isEmpty
         }
     }
 
@@ -199,6 +266,8 @@ public enum OCRService {
     }
 
     private static func prepareImage(_ image: CGImage) throws -> CGImage {
+        guard image.width > 0, image.height > 0,
+              image.width <= maximumImagePixels / image.height else { throw OCRServiceError.imageTooLarge }
         // Cropped screen images can retain an IOSurface, a full-screen stride,
         // wide-gamut colors, or half-float pixels. Give Vision its own eagerly
         // rendered 8-bit sRGB bitmap, and composite transparency over white.
@@ -252,10 +321,12 @@ public enum OCRService {
         var characterCount = 0
         for pageNumber in 1...document.numberOfPages {
             try autoreleasepool {
-                guard let page = document.page(at: pageNumber) else { throw OCRServiceError.cannotRenderPDF }
-                let image = try render(page)
                 do {
-                    let result = try recognize(image: image, options: options)
+                    let image = try autoreleasepool {
+                        guard let page = document.page(at: pageNumber) else { throw OCRServiceError.cannotRenderPDF }
+                        return try prepareImage(render(page))
+                    }
+                    let result = try recognizePreparedImage(image, options: options)
                     characterCount += result.text.count
                     guard characterCount <= maximumResultCharacters else { throw OCRServiceError.resultTooLarge }
                     pages.append(result)

@@ -1,5 +1,11 @@
 # Changes
 
+## Unreleased
+
+- After repeated Accurate-engine compute failures followed by successful Fast recognition, use Fast for that language configuration for one minute, then probe Accurate again. Backup results remain labeled, and selected languages are preserved.
+- Release imported-image decoders, barcode handlers, and failed OCR requests before starting the next recognition stage.
+- Add a repeatable synthetic OCR benchmark that records text correctness, latency, CPU time, and memory without changing the clipboard or capture history.
+
 ## 0.1.1
 
 - Recover from recurring Apple Vision `TextRecognition.CRImageReaderError error 1` with bounded local backup recognition. Show a notice when backup recognition is used.
