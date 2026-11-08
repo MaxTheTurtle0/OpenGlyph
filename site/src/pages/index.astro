@@ -1,49 +1,12 @@
 ---
-import "@fontsource/instrument-serif/400.css";
-import "@fontsource/instrument-serif/400-italic.css";
-import "@fontsource-variable/figtree";
-import "@fontsource/jetbrains-mono/400.css";
-import "@fontsource/jetbrains-mono/500.css";
+import "@fontsource-variable/schibsted-grotesk/wght.css";
+import "@fontsource-variable/martian-mono/standard.css";
 import "../styles/global.css";
 
 const repo = "https://github.com/MaxTheTurtle0/OpenGlyph";
 const release = `${repo}/releases/latest`;
-const title = "OpenGlyph — offline screen OCR for macOS";
 const description =
   "Offline screen OCR and QR capture for macOS. Native Swift, Apple Vision, MIT licensed.";
-
-const features = [
-  {
-    k: "01",
-    t: "Capture anything on screen",
-    d: "Global shortcut with a frozen selection overlay, Retina resolution, multi-display support, and Escape/right-click cancellation.",
-  },
-  {
-    k: "02",
-    t: "Text, QR codes and barcodes",
-    d: "Offline text recognition with Apple Vision. Accurate or fast mode, automatic or explicit language selection, configurable line breaks.",
-  },
-  {
-    k: "03",
-    t: "Images, PDFs and the clipboard",
-    d: "Import from the clipboard, or open PNG, JPEG, TIFF, HEIC and multi-page PDF files. Finder's Open With menu works too.",
-  },
-  {
-    k: "04",
-    t: "Searchable local history",
-    d: "Filter by text, link or code. Click to copy; right-click to view full text, open a web link, or delete. Turn it off or clear it any time.",
-  },
-  {
-    k: "05",
-    t: "Built for automation",
-    d: "URL commands for Raycast, Alfred or Shortcuts, plus a bundled command-line OCR with JSON output.",
-  },
-  {
-    k: "06",
-    t: "Stays on your Mac",
-    d: "No account and no network requests. Snapshots live in memory only for selection and recognition, then are discarded.",
-  },
-];
 ---
 
 <!doctype html>
@@ -51,11 +14,11 @@ const features = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
+    <title>OpenGlyph · offline screen OCR for macOS</title>
     <meta name="description" content={description} />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#f3f1ea" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0b0f17" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#efede6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d0e10" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/png" href="/icon.png" />
     <link rel="apple-touch-icon" href="/icon.png" />
     <link rel="canonical" href="https://openglyph.ma2.dev/" />
@@ -63,235 +26,308 @@ const features = [
     <meta property="og:description" content={description} />
     <meta property="og:image" content="https://openglyph.ma2.dev/icon.png" />
     <meta property="og:url" content="https://openglyph.ma2.dev/" />
-    <meta name="twitter:card" content="summary" />
   </head>
   <body>
-    <div class="grain" aria-hidden="true"></div>
-
-    <header class="nav wrap">
-      <a class="brand" href="/" aria-label="OpenGlyph home">
-        <img src="/icon.png" alt="" width="32" height="32" />
-        <span>OpenGlyph</span>
+    <header class="bar">
+      <a class="mark" href="/">
+        <img src="/icon.png" alt="" width="22" height="22" />
+        OpenGlyph
       </a>
-      <nav aria-label="Primary">
-        <a href="#features">Features</a>
-        <a href="#install">Install</a>
+      <span class="bar-meta">macOS 14+ · MIT</span>
+      <nav>
+        <a href="#reads">Reads</a>
+        <a href="#history">History</a>
         <a href="#automation">Automation</a>
-        <a class="nav-gh" href={repo}>GitHub <span aria-hidden="true">↗</span></a>
+        <a href="#install">Install</a>
+        <a href={repo}>GitHub</a>
       </nav>
     </header>
 
     <main>
-      <!-- HERO -->
-      <section class="hero wrap">
-        <div class="hero-copy">
-          <p class="eyebrow reveal" style="--d:0">
-            <span class="dot"></span> macOS menu bar app · MIT licensed
+      <!-- ───────── HERO ───────── -->
+      <section class="hero">
+        <div class="hero-type" aria-label="Press command shift 2. Drag over text. Paste.">
+          <p class="line l1" aria-hidden="true">
+            <span class="w" data-k="text">Press</span>
+            <span class="w keys" data-k="shortcut"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>2</kbd></span>
           </p>
-          <h1 class="reveal" style="--d:1">
-            Copy the text<br />
-            you can <em>only see.</em>
-          </h1>
-          <p class="lede reveal" style="--d:2">
-            Offline screen OCR and QR capture for macOS. Press
-            <kbd>⌘</kbd><kbd>⇧</kbd><kbd>2</kbd>, drag over text or a QR code,
-            then paste. Native Swift and Apple Vision, with no account or network requests.
+          <p class="line l2" aria-hidden="true">
+            <span class="w" data-k="text">Drag</span>
+            <span class="w" data-k="text">over</span>
+            <span class="w" data-k="text">text.</span>
           </p>
-          <div class="cta reveal" style="--d:3">
-            <a class="btn btn-primary" href={release}>
-              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10m0 0-4-4m4 4 4-4M4 16h12" /></svg>
-              Download latest release
-            </a>
-            <a class="btn btn-ghost" href={repo}>
-              <svg viewBox="0 0 16 16" aria-hidden="true" class="fill"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-              View source on GitHub
-            </a>
-          </div>
-          <p class="fine reveal" style="--d:4">
-            macOS 14 or later · Apple Silicon or Intel · Free and open source
+          <p class="line l3" aria-hidden="true">
+            <span class="w accent" data-k="clipboard">Paste.</span>
           </p>
+          <span class="sweep" aria-hidden="true"></span>
         </div>
 
-        <!-- Signature demo: a viewfinder sweeping over a "screen" -->
-        <div class="stage reveal" style="--d:2" aria-hidden="true">
-          <div class="screen">
-            <div class="screen-bar"><i></i><i></i><i></i><span>Preview</span></div>
-            <div class="doc">
-              <p class="doc-k">Release notes</p>
-              <p class="doc-l target">Ship the release on Friday.</p>
-              <p class="doc-l target">Freeze the branch Thursday at noon.</p>
-              <p class="doc-s"></p><p class="doc-s short"></p>
-              <div class="doc-row">
-                <div class="qr">
-                  {Array.from({ length: 49 }).map((_, i) => {
-                    const r = Math.floor(i / 7), c = i % 7;
-                    const finder = (r < 2 && c < 2) || (r < 2 && c > 4) || (r > 4 && c < 2);
-                    const on = finder || [3, 9, 11, 17, 19, 23, 24, 25, 31, 33, 38, 40, 46].includes(i);
-                    return <b class={on ? "on" : ""}></b>;
-                  })}
-                </div>
-                <div class="doc-col"><p class="doc-s"></p><p class="doc-s short"></p><p class="doc-s"></p></div>
-              </div>
-            </div>
-            <div class="finder">
-              <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
-              <span class="scan"></span>
-            </div>
+        <div class="hero-side">
+          <img class="hero-icon" src="/icon.png" alt="OpenGlyph app icon" width="112" height="112" />
+          <p class="lede">
+            <strong>OpenGlyph</strong> is a free, open-source menu bar app that copies text from your screen.
+            Apple Vision recognizes text, QR codes and barcodes on your Mac, with no account or network requests.
+          </p>
+          <div class="actions">
+            <a class="act act-main" href={release}>Download for macOS <span aria-hidden="true">↓</span></a>
+            <a class="act" href={repo}>Source on GitHub <span aria-hidden="true">↗</span></a>
           </div>
-          <div class="toast">
-            <span class="toast-ic">✓</span>
-            <span><strong>Copied</strong> · 2 lines · on-device</span>
-          </div>
-          <div class="keys"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>2</kbd></div>
+          <button class="try" type="button" data-capture>
+            <span class="try-box" aria-hidden="true"></span>
+            <span>Try it on this page: click here<span class="try-k"> or press <kbd>⌘</kbd><kbd>⇧</kbd><kbd>2</kbd></span>, then drag over any text.</span>
+          </button>
         </div>
       </section>
 
-      <!-- STRIP -->
-      <section class="strip" aria-label="At a glance">
-        <div class="wrap strip-in">
-          <div><b>Offline</b><span>Apple Vision on your Mac</span></div>
-          <div><b>Native</b><span>Swift, AppKit, ScreenCaptureKit</span></div>
-          <div><b>Zero</b><span>third-party dependencies</span></div>
-          <div><b>MIT</b><span>licensed, code and artwork</span></div>
-        </div>
-      </section>
-
-      <!-- FEATURES -->
-      <section id="features" class="features wrap">
-        <div class="sec-head">
-          <p class="eyebrow">What works</p>
-          <h2>Select, copy, <em>paste.</em><br />Nothing leaves the Mac.</h2>
-        </div>
-        <ol class="grid">
-          {features.map((f) => (
-            <li class="card">
-              <span class="card-k">{f.k}</span>
-              <h3>{f.t}</h3>
-              <p>{f.d}</p>
-            </li>
+      <!-- ───────── TAPE ───────── -->
+      <div class="tape" aria-hidden="true">
+        <div class="tape-in">
+          {Array.from({ length: 2 }).map(() => (
+            <span>Native Swift <i>/</i> Apple Vision <i>/</i> AppKit <i>/</i> ScreenCaptureKit <i>/</i> No third-party dependencies <i>/</i> No account <i>/</i> No network requests <i>/</i> MIT licensed <i>/</i> </span>
           ))}
-        </ol>
-
-        <div class="split">
-          <figure class="shot">
-            <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
-            <img src="/menu.png" width="390" height="540" loading="lazy"
-              alt="OpenGlyph menu with a Copy text button, clipboard and file import, and searchable capture history" />
-          </figure>
-          <div class="split-copy">
-            <p class="eyebrow">Lives in the menu bar</p>
-            <h3>Its icon looks like text inside a viewfinder.</h3>
-            <p>
-              Capture from the screen, the clipboard, or an image or PDF. Every result lands in a local,
-              searchable history you can filter by text, links and codes. Reopening the app brings its menu forward.
-            </p>
-            <ul class="ticks">
-              <li>Custom shortcuts and launch at login</li>
-              <li>Permission onboarding on first launch</li>
-              <li>Optional QR web-link opening, off by default</li>
-              <li>History bounded to 500 captures and 32&nbsp;MB, stored with private permissions</li>
-            </ul>
-          </div>
         </div>
-      </section>
+      </div>
 
-      <!-- INSTALL -->
-      <section id="install" class="install">
-        <div class="wrap install-in">
-          <div class="sec-head">
-            <p class="eyebrow">Install</p>
-            <h2>Three steps to your <em>menu bar.</em></h2>
-            <p class="muted">
-              Requires macOS 14 or later, on Apple Silicon or Intel.
+      <!-- ───────── SHEET ───────── -->
+      <div class="sheet">
+
+        <section id="reads" class="row">
+          <h2 class="idx"><span>01</span>What it reads</h2>
+          <div class="body">
+            <p class="big">Text, QR codes and barcodes, from the screen, the clipboard, or a file.</p>
+            <dl class="spec">
+              <div><dt>Screen</dt><dd>Global shortcut, frozen selection overlay, Retina resolution, multiple displays. Escape or right-click cancels.</dd></div>
+              <div><dt>Clipboard</dt><dd>Images and files on the clipboard.</dd></div>
+              <div><dt>Files</dt><dd><code>PNG</code> <code>JPEG</code> <code>TIFF</code> <code>HEIC</code> and multi-page <code>PDF</code>. Finder's Open With menu works too.</dd></div>
+              <div><dt>Modes</dt><dd>Accurate or fast recognition. Automatic or explicit language selection. Configurable line breaks.</dd></div>
+              <div><dt>Links</dt><dd>Optional QR web-link opening, off by default. Only HTTP and HTTPS links can open.</dd></div>
+            </dl>
+            <p class="note">
+              Language availability comes from Apple Vision on your macOS version. Clear handwriting can work; accuracy depends
+              on the source image. If Apple's accurate recognizer fails internally, OpenGlyph tries backup recognition and labels the result.
             </p>
           </div>
-          <ol class="steps">
-            <li>
-              <span class="n">1</span>
-              <div>
-                <h3>Download</h3>
-                <p>Grab a <a href={release}>release archive</a> from GitHub and unzip it.</p>
-              </div>
-            </li>
-            <li>
-              <span class="n">2</span>
-              <div>
-                <h3>Move to Applications</h3>
-                <p>Drag <code>OpenGlyph.app</code> into Applications. Public builds are not Apple-notarized, so macOS may ask you to approve the first launch in Privacy &amp; Security.</p>
-              </div>
-            </li>
-            <li>
-              <span class="n">3</span>
-              <div>
-                <h3>Grant screen access</h3>
-                <p>Follow onboarding, then enable OpenGlyph in <strong>System Settings → Privacy &amp; Security → Screen &amp; System Audio Recording</strong>. File and clipboard imports work without it.</p>
-              </div>
-            </li>
-          </ol>
+        </section>
 
-          <div class="build">
-            <div class="term">
-              <div class="term-bar"><i></i><i></i><i></i><span>Build from source · Swift 5.9+, Xcode CLT</span></div>
-<pre><code><span class="p">$</span> swift test
-<span class="p">$</span> ./scripts/build-app.sh
-<span class="p">$</span> ./scripts/install.sh --skip-build
-<span class="cm"># installs to ~/Applications/OpenGlyph.app and opens it</span></code></pre>
+        <section id="history" class="row">
+          <h2 class="idx"><span>02</span>Menu &amp; history</h2>
+          <div class="body split">
+            <div>
+              <p class="big">Lives in the menu bar. Keeps what you captured, locally.</p>
+              <p>
+                Search your history and filter it by text, links or codes. Click to copy; right-click to view the full text,
+                open a web link, or delete. Turn history off or clear it from the menu.
+              </p>
+              <ul class="dash">
+                <li>Custom shortcuts and launch at login</li>
+                <li>Permission onboarding on first launch</li>
+                <li>Its icon looks like text inside a viewfinder</li>
+              </ul>
+            </div>
+            <figure class="shot">
+              <img src="/menu.png" width="390" height="540" loading="lazy"
+                alt="OpenGlyph menu: Copy text button, From clipboard, Open image or PDF, and searchable history" />
+              <figcaption>The OpenGlyph menu, from the repository</figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <section id="automation" class="row">
+          <h2 class="idx"><span>03</span>Automation</h2>
+          <div class="body">
+            <p class="big">URL commands for Raycast, Alfred or Shortcuts. A command line for everything else.</p>
+            <div class="cmds">
+              <pre><code><b>open</b> 'openglyph://capture'
+<b>open</b> 'openglyph://clipboard'
+<b>open</b> 'openglyph://history'
+<b>open</b> 'openglyph://settings'
+<b>open</b> 'openglyph://onboarding'</code></pre>
+              <pre><code><em># OpenGlyph.app/Contents/MacOS/OpenGlyph</em>
+<b>OpenGlyph</b> --ocr image.png --json
+<b>OpenGlyph</b> --ocr document.pdf --language de-DE --no-line-breaks
+<b>OpenGlyph</b> --ocr image.png --copy
+<b>OpenGlyph</b> --diagnostics</code></pre>
+            </div>
+            <p class="note">CLI OCR prints text by default. <code>--fast</code>, <code>--language CODE</code>, <code>--no-line-breaks</code>, <code>--json</code> and <code>--copy</code> are optional. CLI recognition does not add history.</p>
+          </div>
+        </section>
+
+        <section id="privacy" class="row">
+          <h2 class="idx"><span>04</span>Privacy &amp; limits</h2>
+          <div class="body">
+            <p class="big">Screen snapshots stay in memory only for selection and recognition.</p>
+            <table class="limits">
+              <tbody>
+                <tr><th>History</th><td>500 captures</td><td>32 MB</td><td>private file permissions</td></tr>
+                <tr><th>File import</th><td>100 MB</td><td>40 million pixels</td><td>100 PDF pages</td></tr>
+                <tr><th>Result</th><td>1,000,000 characters</td><td colspan="2">encrypted PDFs must be unlocked first</td></tr>
+              </tbody>
+            </table>
+            <p class="note">Recognized text is saved to <code>~/Library/Application Support/OpenGlyph/history.json</code> when history is enabled.</p>
+          </div>
+        </section>
+
+        <section id="install" class="row">
+          <h2 class="idx"><span>05</span>Install</h2>
+          <div class="body">
+            <p class="big">macOS 14 or later. Apple Silicon or Intel.</p>
+            <ol class="steps">
+              <li><span><a href={release}>Download a release archive</a>, unzip it, and move <code>OpenGlyph.app</code> into Applications.</span></li>
+              <li><span>Follow onboarding on first launch. Public builds are not Apple-notarized, so macOS may ask you to approve the app in Privacy &amp; Security.</span></li>
+              <li><span>For screen capture, enable OpenGlyph in <b>System Settings → Privacy &amp; Security → Screen &amp; System Audio Recording</b>. File and clipboard imports work without it.</span></li>
+            </ol>
+            <div class="from-src">
+              <span>Or build from source. Requires Xcode command line tools and Swift 5.9+.</span>
+              <pre><code>swift test
+./scripts/build-app.sh
+./scripts/install.sh --skip-build</code></pre>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      <!-- AUTOMATION -->
-      <section id="automation" class="auto wrap">
-        <div class="sec-head">
-          <p class="eyebrow">Automation</p>
-          <h2>Scriptable from <em>anywhere.</em></h2>
-          <p class="muted">URL commands for Raycast, Alfred or Shortcuts, and a bundled executable for command-line recognition. CLI recognition does not add history.</p>
-        </div>
-        <div class="auto-grid">
-          <div class="term">
-            <div class="term-bar"><i></i><i></i><i></i><span>URL commands</span></div>
-<pre><code><span class="p">$</span> open 'openglyph://capture'
-<span class="p">$</span> open 'openglyph://clipboard'
-<span class="p">$</span> open 'openglyph://history'
-<span class="p">$</span> open 'openglyph://settings'</code></pre>
-          </div>
-          <div class="term">
-            <div class="term-bar"><i></i><i></i><i></i><span>Command-line OCR</span></div>
-<pre><code><span class="p">$</span> OpenGlyph --ocr image.png --json
-<span class="p">$</span> OpenGlyph --ocr document.pdf \
-    --language de-DE --no-line-breaks
-<span class="p">$</span> OpenGlyph --ocr image.png --copy
-<span class="cm"># binary: OpenGlyph.app/Contents/MacOS/OpenGlyph</span></code></pre>
-          </div>
-        </div>
-      </section>
-
-      <!-- CTA -->
-      <section class="final wrap">
-        <div class="final-card">
-          <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
-          <img src="/icon.png" alt="" width="96" height="96" loading="lazy" />
-          <h2>Free, open source, <em>and yours.</em></h2>
-          <p>Small fixes and focused improvements are welcome. Keep recognition local, avoid accounts and analytics.</p>
-          <div class="cta center">
-            <a class="btn btn-primary" href={release}>Download for macOS</a>
-            <a class="btn btn-ghost" href={repo}>Star on GitHub ↗</a>
-          </div>
-        </div>
+      <!-- ───────── END ───────── -->
+      <section class="end">
+        <a class="end-link" href={release}>
+          <span class="end-k">Download OpenGlyph</span>
+          <span class="end-arrow" aria-hidden="true">↓</span>
+        </a>
+        <a class="end-link" href={repo}>
+          <span class="end-k">Read the source</span>
+          <span class="end-arrow" aria-hidden="true">↗</span>
+        </a>
       </section>
     </main>
 
-    <footer class="foot wrap">
-      <div class="foot-l">
-        <img src="/icon.png" alt="" width="24" height="24" />
-        <span>OpenGlyph · MIT License</span>
-      </div>
-      <div class="foot-r">
-        <a href={repo}>GitHub</a>
-        <a href={`${repo}/blob/main/LICENSE`}>License</a>
-        <a href="https://ma2.dev">More projects by Andrei ↗</a>
-      </div>
+    <footer class="foot">
+      <span>OpenGlyph · MIT License · <a href={`${repo}/blob/main/LICENSE`}>License</a></span>
+      <a href="https://ma2.dev">More projects by Andrei ↗</a>
     </footer>
+
+    <!-- capture-mode overlay (in-page demo) -->
+    <div class="cap" hidden>
+      <div class="cap-hint">Drag over text · Esc or right-click to cancel</div>
+      <div class="cap-sel" hidden>
+        <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+        <span class="cap-size"></span>
+      </div>
+    </div>
+    <div class="toast" role="status" aria-live="polite" hidden>
+      <div class="toast-h"><span>Copied</span><span class="toast-n"></span></div>
+      <p class="toast-t"></p>
+      <p class="toast-f">This demo copies the page's own text. The app reads pixels with Apple Vision.</p>
+    </div>
+
+    <script>
+      const cap = document.querySelector<HTMLDivElement>(".cap")!;
+      const sel = cap.querySelector<HTMLDivElement>(".cap-sel")!;
+      const size = cap.querySelector<HTMLSpanElement>(".cap-size")!;
+      const toast = document.querySelector<HTMLDivElement>(".toast")!;
+      let start: { x: number; y: number } | null = null;
+      let toastTimer = 0;
+
+      const open = () => {
+        cap.hidden = false;
+        sel.hidden = true;
+        document.documentElement.classList.add("capturing");
+      };
+      const close = () => {
+        cap.hidden = true;
+        start = null;
+        document.documentElement.classList.remove("capturing");
+      };
+
+      const rectOf = (a: { x: number; y: number }, b: { x: number; y: number }) => ({
+        left: Math.min(a.x, b.x), top: Math.min(a.y, b.y),
+        right: Math.max(a.x, b.x), bottom: Math.max(a.y, b.y),
+      });
+
+      function textIn(r: { left: number; top: number; right: number; bottom: number }) {
+        const walker = document.createTreeWalker(document.querySelector("main")!, NodeFilter.SHOW_TEXT);
+        const range = document.createRange();
+        const lines: { y: number; x: number; s: string }[] = [];
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+          const t = n.textContent ?? "";
+          if (!t.trim()) continue;
+          const el = n.parentElement;
+          if (!el || el.closest(".tape")) continue;
+          // walk word by word so partial lines are captured, like a crop
+          const re = /\S+/g;
+          for (let m = re.exec(t); m; m = re.exec(t)) {
+            range.setStart(n, m.index);
+            range.setEnd(n, m.index + m[0].length);
+            const b = range.getBoundingClientRect();
+            const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+            if (b.width && cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) {
+              lines.push({ y: Math.round(b.top), x: b.left, s: m[0] });
+            }
+          }
+        }
+        lines.sort((a, b) => (Math.abs(a.y - b.y) < 6 ? a.x - b.x : a.y - b.y));
+        let out = "", lastY: number | null = null;
+        for (const w of lines) {
+          if (lastY !== null) out += Math.abs(w.y - lastY) < 6 ? " " : "\n";
+          out += w.s;
+          lastY = w.y;
+        }
+        return out;
+      }
+
+      function showToast(text: string) {
+        const t = toast.querySelector(".toast-t")!;
+        const n = toast.querySelector(".toast-n")!;
+        if (text) {
+          t.textContent = text.length > 240 ? text.slice(0, 240) + "…" : text;
+          n.textContent = `${text.length} chars`;
+          toast.classList.remove("empty");
+        } else {
+          t.textContent = "No text in that selection. Try again.";
+          n.textContent = "";
+          toast.classList.add("empty");
+        }
+        toast.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => (toast.hidden = true), 6000);
+      }
+
+      cap.addEventListener("pointerdown", (e) => {
+        if (e.button === 2) return;
+        start = { x: e.clientX, y: e.clientY };
+        try { cap.setPointerCapture(e.pointerId); } catch {}
+      });
+      cap.addEventListener("pointermove", (e) => {
+        if (!start) return;
+        const r = rectOf(start, { x: e.clientX, y: e.clientY });
+        sel.hidden = false;
+        Object.assign(sel.style, {
+          left: r.left + "px", top: r.top + "px",
+          width: r.right - r.left + "px", height: r.bottom - r.top + "px",
+        });
+        size.textContent = `${Math.round(r.right - r.left)} × ${Math.round(r.bottom - r.top)}`;
+      });
+      cap.addEventListener("pointerup", async (e) => {
+        if (!start) return;
+        const r = rectOf(start, { x: e.clientX, y: e.clientY });
+        close();
+        if (r.right - r.left < 4 || r.bottom - r.top < 4) return;
+        const text = textIn(r);
+        if (text) {
+          try { await navigator.clipboard.writeText(text); } catch {}
+        }
+        showToast(text);
+      });
+      cap.addEventListener("contextmenu", (e) => { e.preventDefault(); close(); });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !cap.hidden) return close();
+        if (e.shiftKey && (e.metaKey || e.ctrlKey) && (e.code === "Digit2" || e.key === "2" || e.key === "@")) {
+          e.preventDefault();
+          cap.hidden ? open() : close();
+        }
+      });
+      document.querySelectorAll("[data-capture]").forEach((b) =>
+        b.addEventListener("click", (e) => { e.stopPropagation(); open(); })
+      );
+      toast.addEventListener("click", () => (toast.hidden = true));
+    </script>
   </body>
 </html>

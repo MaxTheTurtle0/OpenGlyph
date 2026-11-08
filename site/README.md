@@ -33,4 +33,6 @@ curl -I https://openglyph.ma2.dev # expect HTTP 200
 - `src/pages/index.astro` – the landing page
 - `src/pages/404.astro` – not-found page (served via `not_found_handling`)
 - `src/styles/global.css` – design tokens, light/dark themes, layout and animations
+
+The page includes a small in-page capture demo: press ⌘⇧2 (Ctrl+Shift+2 elsewhere) or click "Try it on this page", then drag over any text to copy it. It copies the page's own DOM text; it does not run OCR.
 - `public/` – icon and screenshot
