@@ -203,22 +203,9 @@ kbd {
   background-repeat: no-repeat;
 }
 
-/* ───────── TAPE ───────── */
-.tape {
-  overflow: hidden;
-  background: var(--ink); color: var(--on-ink);
-  border-block: 1px solid var(--rule);
-  font: 500 0.72rem/1 var(--mono);
-  font-stretch: 87.5%;
-  text-transform: uppercase; letter-spacing: 0.06em;
-}
-.tape-in { display: flex; width: max-content; animation: tape 48s linear infinite; }
-.tape span { padding: 14px 0; white-space: pre; }
-.tape i { font-style: normal; color: var(--scan); padding: 0 1.1em; }
-@keyframes tape { to { transform: translateX(-50%); } }
-
 /* ───────── SHEET ───────── */
 .sheet { padding: 0 var(--gut); }
+.sheet > .row:first-child { border-top: 1px solid var(--rule); }
 .row {
   display: grid;
   grid-template-columns: minmax(200px, 0.9fr) minmax(0, 2.6fr);
@@ -449,6 +436,5 @@ html.capturing, html.capturing * { cursor: crosshair !important; user-select: no
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0s !important; animation-delay: 0s !important; transition: none !important; }
-  .tape-in { animation: none; }
   .sweep { display: none; }
 }

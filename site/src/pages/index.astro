@@ -79,15 +79,6 @@ const description =
         </div>
       </section>
 
-      <!-- ───────── TAPE ───────── -->
-      <div class="tape" aria-hidden="true">
-        <div class="tape-in">
-          {Array.from({ length: 2 }).map(() => (
-            <span>Native Swift <i>/</i> Apple Vision <i>/</i> AppKit <i>/</i> ScreenCaptureKit <i>/</i> No third-party dependencies <i>/</i> No account <i>/</i> No network requests <i>/</i> MIT licensed <i>/</i> </span>
-          ))}
-        </div>
-      </div>
-
       <!-- ───────── SHEET ───────── -->
       <div class="sheet">
 
@@ -250,7 +241,7 @@ const description =
           const t = n.textContent ?? "";
           if (!t.trim()) continue;
           const el = n.parentElement;
-          if (!el || el.closest(".tape")) continue;
+          if (!el) continue;
           // walk word by word so partial lines are captured, like a crop
           const re = /\S+/g;
           for (let m = re.exec(t); m; m = re.exec(t)) {
